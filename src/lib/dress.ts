@@ -35,12 +35,14 @@ export type Length = "mini" | "midi" | "maxi" | "tea" | "knee";
 export type Fabric = "silk" | "chiffon" | "linen" | "satin" | "cotton" | "tulle" | "velvet";
 export type Sleeve = "sleeveless" | "cap" | "short" | "long" | "puff" | "strap";
 export type Slit = "none" | "side" | "front" | "high";
+export type Size = "XS" | "S" | "M" | "L" | "XL" | "XXL";
 
 export interface VibeAnswers {
   mood: Mood;
   occasion: Occasion;
   color: Color;
   season: Season;
+  size: Size;
 }
 
 export interface BuilderAnswers {
@@ -50,17 +52,28 @@ export interface BuilderAnswers {
   sleeve: Sleeve;
   slit: Slit;
   color: Color;
+  size: Size;
 }
 
 export interface DressResult {
-  name: string;        // dress style name e.g. "The Aurora Slip"
-  silhouette: string;  // human description
+  name: string;
+  silhouette: string;
   characterName: string;
   tagline: string;
   details: string[];
   palette: { hex: string; label: string }[];
   pairings: string[];
   vibeWords: string[];
+  size: Size;
+  // For the parametric dress illustration
+  dressParams: {
+    neckline: Neckline;
+    length: Length;
+    fabric: Fabric;
+    sleeve: Sleeve;
+    slit: Slit;
+    color: Color;
+  };
 }
 
 export const COLORS: Record<Color, { hex: string; label: string }> = {
@@ -105,6 +118,7 @@ export const LENGTHS: Length[] = ["mini", "knee", "tea", "midi", "maxi"];
 export const FABRICS: Fabric[] = ["silk", "chiffon", "linen", "satin", "cotton", "tulle", "velvet"];
 export const SLEEVES: Sleeve[] = ["sleeveless", "strap", "cap", "short", "long", "puff"];
 export const SLITS: Slit[] = ["none", "side", "front", "high"];
+export const SIZES: Size[] = ["XS", "S", "M", "L", "XL", "XXL"];
 
 // ---------- Recommendation engine ----------
 
@@ -163,37 +177,44 @@ function hash(parts: (string | number)[]): number {
 function silhouetteFromMood(mood: Mood, occasion: Occasion, season: Season): {
   silhouette: string;
   details: string[];
+  dressParams: DressResult["dressParams"];
 } {
-  const seasonalFabric: Record<Season, string> = {
-    spring: "airy chiffon",
-    summer: "cool linen",
-    autumn: "weighted satin",
-    winter: "soft velvet",
+  const seasonalFabric: Record<Season, Fabric> = {
+    spring: "chiffon",
+    summer: "linen",
+    autumn: "satin",
+    winter: "velvet",
   };
-  const map: Record<Mood, { silhouette: string; details: string[] }> = {
+  const map: Record<Mood, { silhouette: string; details: string[]; neckline: Neckline; length: Length; sleeve: Sleeve; slit: Slit; fabric: Fabric }> = {
     playful: {
       silhouette: "A skater silhouette with a fitted bodice and a swing skirt that catches light when you move.",
-      details: ["square neckline", "knee length", "puff sleeves", "side pockets", `${seasonalFabric[season]}`],
+      details: ["square neckline", "knee length", "puff sleeves", "side pockets"],
+      neckline: "square", length: "knee", sleeve: "puff", slit: "none", fabric: seasonalFabric[season],
     },
     romantic: {
       silhouette: "A bias-cut slip that skims the body and pools at the hem like spilled silk.",
       details: ["sweetheart neckline", "midi length", "delicate straps", "soft cowl back", "silk-satin"],
+      neckline: "sweetheart", length: "midi", sleeve: "strap", slit: "none", fabric: "silk",
     },
     powerful: {
       silhouette: "A sculpted column with a sharp shoulder line and a single, decisive slit.",
       details: ["v-neckline", "maxi length", "long sleeves", "high front slit", "double-faced crepe"],
+      neckline: "v-neck", length: "maxi", sleeve: "long", slit: "front", fabric: "satin",
     },
     serene: {
       silhouette: "A relaxed shift that drapes from the shoulder, easy to move in, easy to be in.",
       details: ["boat neckline", "tea length", "cap sleeves", "no slit", "washed linen"],
+      neckline: "boat", length: "tea", sleeve: "cap", slit: "none", fabric: "linen",
     },
     edgy: {
       silhouette: "An asymmetric mini with raw, architectural lines and one bare shoulder.",
       details: ["off-shoulder", "mini length", "single sleeve", "side slit", "matte silk"],
+      neckline: "off-shoulder", length: "mini", sleeve: "short", slit: "side", fabric: "silk",
     },
     dreamy: {
       silhouette: "A floor-skimming bias dress with an organza overlay that floats half a beat behind you.",
       details: ["halter neckline", "maxi length", "sleeveless", "no slit", "tulle overlay"],
+      neckline: "halter", length: "maxi", sleeve: "sleeveless", slit: "none", fabric: "tulle",
     },
   };
   const base = map[mood];
@@ -209,12 +230,20 @@ function silhouetteFromMood(mood: Mood, occasion: Occasion, season: Season): {
   return {
     silhouette: base.silhouette,
     details: [...base.details, occasionDetail[occasion]],
+    dressParams: {
+      neckline: base.neckline,
+      length: base.length,
+      sleeve: base.sleeve,
+      slit: base.slit,
+      fabric: base.fabric,
+      color: "blush" as Color, // overridden by caller
+    },
   };
 }
 
 export function recommendFromVibe(a: VibeAnswers): DressResult {
   const seed = hash([a.mood, a.occasion, a.color, a.season]);
-  const { silhouette, details } = silhouetteFromMood(a.mood, a.occasion, a.season);
+  const { silhouette, details, dressParams } = silhouetteFromMood(a.mood, a.occasion, a.season);
   const palette = paletteFor(a.color, a.mood);
   return {
     name: pick(STYLE_NAMES[a.mood], seed),
@@ -225,11 +254,12 @@ export function recommendFromVibe(a: VibeAnswers): DressResult {
     palette,
     pairings: pairingsFor(a.mood, a.occasion),
     vibeWords: VIBE_WORDS[a.mood],
+    size: a.size,
+    dressParams: { ...dressParams, color: a.color },
   };
 }
 
 export function recommendFromBuilder(b: BuilderAnswers): DressResult {
-  // Infer the mood from the choices so we can name a character.
   const mood: Mood = inferMood(b);
   const seed = hash([b.neckline, b.length, b.fabric, b.sleeve, b.slit, b.color]);
   return {
@@ -249,6 +279,15 @@ export function recommendFromBuilder(b: BuilderAnswers): DressResult {
     palette: paletteFor(b.color, mood),
     pairings: pairingsFor(mood, "cocktail"),
     vibeWords: VIBE_WORDS[mood],
+    size: b.size,
+    dressParams: {
+      neckline: b.neckline,
+      length: b.length,
+      fabric: b.fabric,
+      sleeve: b.sleeve,
+      slit: b.slit,
+      color: b.color,
+    },
   };
 }
 

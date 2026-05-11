@@ -4,6 +4,7 @@ import {
   FABRICS,
   LENGTHS,
   NECKLINES,
+  SIZES,
   SLEEVES,
   SLITS,
   type BuilderAnswers,
@@ -11,10 +12,12 @@ import {
   type Fabric,
   type Length,
   type Neckline,
+  type Size,
   type Sleeve,
   type Slit,
 } from "../lib/dress";
-import { ChoiceChip, FooterCTA, Header } from "./_chrome";
+import { NecklineIcon, LengthIcon, FabricIcon, SleeveIcon, SlitIcon } from "../lib/icons";
+import { FooterCTA, Header } from "./_chrome";
 
 interface BuilderProps {
   onBack: () => void;
@@ -23,14 +26,26 @@ interface BuilderProps {
 
 type Field = keyof BuilderAnswers;
 
-const STEPS: { field: Field; eyebrow: string; title: string; help?: string }[] = [
+const STEPS: { field: Field; eyebrow: string; title: string }[] = [
   { field: "neckline", eyebrow: "Neckline", title: "How do you want it to sit at the top?" },
   { field: "length",   eyebrow: "Length",   title: "Where should it land?" },
-  { field: "fabric",   eyebrow: "Fabric",   title: "What should it feel like in your hand?" },
+  { field: "fabric",   eyebrow: "Fabric",   title: "What should it feel like?" },
   { field: "sleeve",   eyebrow: "Sleeves",  title: "What about the arms?" },
   { field: "slit",     eyebrow: "Slit",     title: "Should it open up when you walk?" },
   { field: "color",    eyebrow: "Colour",   title: "And the colour?" },
+  { field: "size",     eyebrow: "Size",     title: "What size feels like you?" },
 ];
+
+function IconFor({ field, value }: { field: Field; value: string }) {
+  switch (field) {
+    case "neckline": return <NecklineIcon neckline={value as Neckline} />;
+    case "length":   return <LengthIcon length={value as Length} />;
+    case "fabric":   return <FabricIcon fabric={value as Fabric} />;
+    case "sleeve":   return <SleeveIcon sleeve={value as Sleeve} />;
+    case "slit":     return <SlitIcon slit={value as Slit} />;
+    default:         return null;
+  }
+}
 
 export function Builder({ onBack, onComplete }: BuilderProps) {
   const [step, setStep] = useState(0);
@@ -39,8 +54,7 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
   const total = STEPS.length;
   const current = step + 1;
   const def = STEPS[step];
-  const value = answers[def.field];
-  const ready = value !== undefined;
+  const ready = answers[def.field] !== undefined;
 
   const next = () => {
     if (step < total - 1) setStep((s) => s + 1);
@@ -55,7 +69,7 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
   const set = <K extends Field>(field: K, v: BuilderAnswers[K]) =>
     setAnswers((a) => ({ ...a, [field]: v }));
 
-  const options = useMemo(() => {
+  const options = useMemo((): string[] => {
     switch (def.field) {
       case "neckline": return NECKLINES;
       case "length":   return LENGTHS;
@@ -63,8 +77,11 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
       case "sleeve":   return SLEEVES;
       case "slit":     return SLITS;
       case "color":    return Object.keys(COLORS) as Color[];
+      case "size":     return SIZES;
     }
   }, [def.field]);
+
+  const hasIllustration = ["neckline", "length", "fabric", "sleeve", "slit"].includes(def.field);
 
   return (
     <main className="flex flex-1 flex-col px-5 pb-6">
@@ -73,7 +90,6 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
       <section className="pt-2 rise rise-1" key={step}>
         <p className="eyebrow">{def.eyebrow}</p>
         <h2 className="display-h2 mt-2">{def.title}</h2>
-        {def.help && <p className="body-sm mt-2 text-muted">{def.help}</p>}
 
         <div className="mt-6">
           {def.field === "color" ? (
@@ -82,39 +98,60 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
                 const meta = COLORS[c];
                 const active = answers.color === c;
                 return (
+                  <button key={c} type="button" onClick={() => set("color", c)} className="flex flex-col items-center gap-2">
+                    <span className={`swatch ${active ? "swatch-active" : ""}`} style={{ background: meta.hex }} aria-label={meta.label} />
+                    <span className={`text-[12px] ${active ? "text-ink font-medium" : "text-muted"}`}>{meta.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : def.field === "size" ? (
+            <div className="grid grid-cols-3 gap-3">
+              {(options as Size[]).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => set("size", s)}
+                  className={`flex h-16 items-center justify-center rounded-md border text-center transition-all duration-150 ease-out active:scale-[0.98] ${
+                    answers.size === s ? "border-ink bg-primary-tint shadow-soft" : "border-hairline bg-surface-soft"
+                  }`}
+                >
+                  <span className="font-display text-[20px] font-medium text-ink">{s}</span>
+                </button>
+              ))}
+            </div>
+          ) : hasIllustration ? (
+            <div className={`grid gap-3 ${def.field === "neckline" || def.field === "sleeve" ? "grid-cols-3" : "grid-cols-2"}`}>
+              {options.map((opt) => {
+                const active = answers[def.field] === opt;
+                return (
                   <button
-                    key={c}
+                    key={opt}
                     type="button"
-                    onClick={() => set("color", c)}
-                    className="flex flex-col items-center gap-2"
+                    onClick={() => set(def.field as Exclude<Field, "color" | "size">, opt as never)}
+                    className={`flex flex-col items-center gap-2 rounded-md border p-3 text-center transition-all duration-150 ease-out active:scale-[0.98] ${
+                      active ? "border-ink bg-primary-tint shadow-soft" : "border-hairline bg-surface-soft"
+                    }`}
                   >
-                    <span
-                      className={`swatch ${active ? "swatch-active" : ""}`}
-                      style={{ background: meta.hex }}
-                      aria-label={meta.label}
-                    />
-                    <span className={`text-[12px] ${active ? "text-ink font-medium" : "text-muted"}`}>
-                      {meta.label}
-                    </span>
+                    <IconFor field={def.field} value={opt} />
+                    <span className="text-[13px] font-medium text-ink">{opt}</span>
                   </button>
                 );
               })}
             </div>
           ) : (
             <div className="flex flex-wrap gap-2">
-              {(options as string[]).map((opt) => {
+              {options.map((opt) => {
                 const active = answers[def.field] === opt;
                 return (
-                  <ChoiceChip
+                  <button
                     key={opt}
-                    active={active}
-                    onClick={() =>
-                      set(def.field as Exclude<Field, "color">, opt as Neckline & Length & Fabric & Sleeve & Slit)
-                    }
-                    variant="accent"
+                    type="button"
+                    onClick={() => set(def.field as Exclude<Field, "color" | "size">, opt as never)}
+                    className={`pill ${active ? "pill-accent-active" : ""}`}
                   >
                     {opt}
-                  </ChoiceChip>
+                  </button>
                 );
               })}
             </div>
@@ -125,7 +162,7 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
       </section>
 
       <FooterCTA
-        primaryLabel={step === total - 1 ? "Reveal my dress" : "Continue"}
+        primaryLabel={step === total - 1 ? "Reveal my dress ✦" : "Continue"}
         onPrimary={next}
         primaryDisabled={!ready}
       />
@@ -134,9 +171,7 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
 }
 
 function isComplete(a: Partial<BuilderAnswers>): a is BuilderAnswers {
-  return (
-    !!a.neckline && !!a.length && !!a.fabric && !!a.sleeve && !!a.slit && !!a.color
-  );
+  return !!a.neckline && !!a.length && !!a.fabric && !!a.sleeve && !!a.slit && !!a.color && !!a.size;
 }
 
 function BuilderPreview({ answers }: { answers: Partial<BuilderAnswers> }) {
@@ -147,6 +182,7 @@ function BuilderPreview({ answers }: { answers: Partial<BuilderAnswers> }) {
     { label: "Sleeves",  value: answers.sleeve },
     { label: "Slit",     value: answers.slit },
     { label: "Colour",   value: answers.color ? COLORS[answers.color].label : undefined },
+    { label: "Size",     value: answers.size },
   ];
 
   return (

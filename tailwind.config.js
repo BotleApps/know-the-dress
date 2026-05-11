@@ -22,7 +22,7 @@ export default {
       },
       fontFamily: {
         sans: [
-          "Inter",
+          "DM Sans",
           "-apple-system",
           "system-ui",
           "Roboto",
@@ -30,7 +30,7 @@ export default {
           "sans-serif",
         ],
         display: [
-          "Fraunces",
+          "Playfair Display",
           "Georgia",
           "Times New Roman",
           "serif",
