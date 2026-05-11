@@ -57,17 +57,15 @@ export const handler: Handler = async (event: HandlerEvent) => {
   };
 
   try {
-    const store = getStore({ name: "stylesift-events", consistency: "eventual" });
+    const store = getStore("stylesift-events");
     // One blob per event keeps writes cheap and readable.
-    const key = `${ipHash}/${ts}-${Math.random().toString(36).slice(2, 8)}.json`;
+    const key = `${ts}-${Math.random().toString(36).slice(2, 8)}`;
     await store.setJSON(key, record);
-  } catch (err) {
+  } catch (err: any) {
     // Outside Netlify (local dev without `netlify dev`) Blobs is unavailable —
     // log to stdout so the dev still has visibility, then succeed.
     console.log("[stylesift event]", JSON.stringify(record));
-    if (process.env.NETLIFY === "true") {
-      console.error("Failed to persist event", err);
-    }
+    console.error("Failed to persist event:", err?.message ?? err);
   }
 
   return {

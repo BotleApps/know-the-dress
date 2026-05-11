@@ -27,27 +27,31 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const store = getStore({ name: "stylesift-events", consistency: "eventual" });
+    const store = getStore("stylesift-events");
 
     let blobs: { key: string }[] = [];
     try {
       const listing = await store.list();
       blobs = listing.blobs ?? [];
     } catch (listErr: any) {
-      // Store might not exist yet (no events logged) — return empty
-      console.warn("Blob store list failed (may not exist yet):", listErr?.message ?? listErr);
+      // Store might not exist yet (no events logged) — return empty with debug info
+      console.warn("Blob store list failed:", listErr?.message ?? listErr);
       return {
         statusCode: 200,
-        headers: {
-          "content-type": "application/json",
-          "cache-control": "no-store",
-        },
-        body: JSON.stringify({ count: 0, events: [] }),
+        headers: { "content-type": "application/json", "cache-control": "no-store" },
+        body: JSON.stringify({
+          count: 0,
+          events: [],
+          debug: {
+            note: "Blob store may not exist yet — log some events first",
+            error: listErr?.message ?? String(listErr),
+            netlifyEnv: !!process.env.NETLIFY,
+          },
+        }),
       };
     }
 
     const events: unknown[] = [];
-    // Fetch up to 500 most recent events (blobs are listed in key order).
     const keys = blobs.map((b) => b.key).slice(-500);
 
     await Promise.all(
@@ -66,17 +70,18 @@ export const handler: Handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: {
-        "content-type": "application/json",
-        "cache-control": "no-store",
-      },
+      headers: { "content-type": "application/json", "cache-control": "no-store" },
       body: JSON.stringify({ count: events.length, events }),
     };
   } catch (err: any) {
-    console.error("Failed to read events", err);
+    console.error("Failed to read events:", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to read events", detail: err?.message ?? String(err) }),
+      body: JSON.stringify({
+        error: "Failed to read events",
+        detail: err?.message ?? String(err),
+        stack: err?.stack?.split("\n").slice(0, 5),
+      }),
     };
   }
 };
