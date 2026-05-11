@@ -3,6 +3,7 @@ import { Home } from "./screens/Home";
 import { VibeQuiz } from "./screens/VibeQuiz";
 import { Builder } from "./screens/Builder";
 import { Result } from "./screens/Result";
+import { Admin } from "./screens/Admin";
 import {
   recommendFromBuilder,
   recommendFromVibe,
@@ -16,10 +17,14 @@ type Route =
   | { name: "home" }
   | { name: "vibe" }
   | { name: "builder" }
-  | { name: "result"; result: DressResult; via: "vibe" | "builder" };
+  | { name: "result"; result: DressResult; via: "vibe" | "builder" }
+  | { name: "admin" };
 
 export default function App() {
-  const [route, setRoute] = useState<Route>({ name: "home" });
+  const [route, setRoute] = useState<Route>(() => {
+    if (typeof location !== "undefined" && location.hash === "#admin") return { name: "admin" };
+    return { name: "home" };
+  });
 
   useEffect(() => {
     logEvent("view", { screen: route.name });
@@ -27,6 +32,8 @@ export default function App() {
 
   const view = useMemo(() => {
     switch (route.name) {
+      case "admin":
+        return <Admin onBack={() => setRoute({ name: "home" })} />;
       case "home":
         return (
           <Home
@@ -38,6 +45,7 @@ export default function App() {
               logEvent("path_chosen", { path: "builder" });
               setRoute({ name: "builder" });
             }}
+            onAdmin={() => setRoute({ name: "admin" })}
           />
         );
       case "vibe":

@@ -1,1 +1,1 @@
-{"root":["./vite.config.ts","./netlify/functions/log.ts"],"version":"5.9.3"}
+{"root":["./vite.config.ts","./netlify/functions/events.ts","./netlify/functions/log.ts"],"version":"5.9.3"}

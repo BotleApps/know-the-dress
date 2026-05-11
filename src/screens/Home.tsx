@@ -3,9 +3,10 @@ import { Wordmark } from "./_chrome";
 interface HomeProps {
   onPickVibe: () => void;
   onPickBuilder: () => void;
+  onAdmin: () => void;
 }
 
-export function Home({ onPickVibe, onPickBuilder }: HomeProps) {
+export function Home({ onPickVibe, onPickBuilder, onAdmin }: HomeProps) {
   return (
     <main className="flex flex-1 flex-col px-5 pb-6 pt-6">
       <div className="flex items-center justify-between">
@@ -48,6 +49,13 @@ export function Home({ onPickVibe, onPickBuilder }: HomeProps) {
           Anonymous by design. We never ask for your name — but we do remember
           this device so we can keep getting better.
         </p>
+        <button
+          type="button"
+          onClick={onAdmin}
+          className="mt-4 text-[12px] text-muted-soft underline underline-offset-2 opacity-60 hover:opacity-100 transition-opacity"
+        >
+          Admin dashboard
+        </button>
       </div>
     </main>
   );
