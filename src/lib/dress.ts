@@ -26,11 +26,15 @@ export type Color =
   | "ruby"
   | "sand"
   | "lilac"
-  | "noir";
+  | "noir"
+  | "red"
+  | "blue"
+  | "gold"
+  | "black";
 
 export type Season = "spring" | "summer" | "autumn" | "winter";
 
-export type Neckline = "v-neck" | "sweetheart" | "halter" | "boat" | "square" | "off-shoulder";
+export type Neckline = "v-neck" | "sweetheart" | "halter" | "boat" | "square" | "off-shoulder" | "strapless" | "scoop" | "cowl" | "one-shoulder" | "high-neck";
 export type Length = "mini" | "midi" | "maxi" | "tea" | "knee";
 export type Fabric = "silk" | "chiffon" | "linen" | "satin" | "cotton" | "tulle" | "velvet";
 export type Sleeve = "sleeveless" | "cap" | "short" | "long" | "puff" | "strap";
@@ -85,6 +89,10 @@ export const COLORS: Record<Color, { hex: string; label: string }> = {
   sand:     { hex: "#d8c5a3", label: "Sand" },
   lilac:    { hex: "#c8b6e2", label: "Lilac" },
   noir:     { hex: "#0f0f10", label: "Noir" },
+  red:      { hex: "#d62828", label: "Red" },
+  blue:     { hex: "#1d3557", label: "Blue" },
+  gold:     { hex: "#c9a227", label: "Gold" },
+  black:    { hex: "#111111", label: "Black" },
 };
 
 export const MOODS: { id: Mood; label: string; emoji: string; hint: string }[] = [
@@ -113,7 +121,7 @@ export const SEASONS: { id: Season; label: string }[] = [
   { id: "winter", label: "Winter" },
 ];
 
-export const NECKLINES: Neckline[] = ["v-neck", "sweetheart", "halter", "boat", "square", "off-shoulder"];
+export const NECKLINES: Neckline[] = ["v-neck", "sweetheart", "halter", "strapless", "off-shoulder", "scoop", "cowl", "one-shoulder", "square", "boat", "high-neck"];
 export const LENGTHS: Length[] = ["mini", "knee", "tea", "midi", "maxi"];
 export const FABRICS: Fabric[] = ["silk", "chiffon", "linen", "satin", "cotton", "tulle", "velvet"];
 export const SLEEVES: Sleeve[] = ["sleeveless", "strap", "cap", "short", "long", "puff"];
@@ -293,7 +301,7 @@ export function recommendFromBuilder(b: BuilderAnswers): DressResult {
 
 function inferMood(b: BuilderAnswers): Mood {
   if (b.fabric === "tulle" || b.fabric === "chiffon") return "dreamy";
-  if (b.fabric === "velvet" || b.color === "noir" || b.color === "midnight") return "edgy";
+  if (b.fabric === "velvet" || b.color === "noir" || b.color === "midnight" || b.color === "black") return "edgy";
   if (b.fabric === "linen" || b.fabric === "cotton") return "serene";
   if (b.fabric === "satin" && b.length === "maxi") return "romantic";
   if (b.length === "mini" && b.sleeve === "puff") return "playful";

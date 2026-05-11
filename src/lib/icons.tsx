@@ -247,6 +247,46 @@ const NecklineIcons: Record<Neckline, JSX.Element> = {
       <line x1="44" y1="26" x2="48" y2="26" stroke="#222" strokeWidth="1" strokeDasharray="2 2"/>
     </svg>
   ),
+  strapless: (
+    <svg width={S} height={S} viewBox="0 0 56 56" fill="none" aria-hidden>
+      <circle cx="28" cy="10" r="6" fill="#f4ece1"/>
+      <path d="M16 24 L40 24 L42 52 L14 52 Z" fill="#b8336a" fillOpacity="0.12" stroke="#222" strokeWidth="1.2"/>
+      <path d="M16 24 C22 22 34 22 40 24" stroke="#222" strokeWidth="1.4" fill="none"/>
+    </svg>
+  ),
+  scoop: (
+    <svg width={S} height={S} viewBox="0 0 56 56" fill="none" aria-hidden>
+      <circle cx="28" cy="10" r="6" fill="#f4ece1"/>
+      <path d="M16 20 C16 30 28 36 28 36 C28 36 40 30 40 20" stroke="#222" strokeWidth="1.4" fill="#f3c8cf" fillOpacity="0.3"/>
+      <path d="M14 20 L16 20 C16 30 28 36 28 36 C28 36 40 30 40 20 L42 20 L42 52 L14 52 Z" fill="#b8336a" fillOpacity="0.12"/>
+      <path d="M14 20 L42 20" stroke="#222" strokeWidth="1.2"/>
+    </svg>
+  ),
+  cowl: (
+    <svg width={S} height={S} viewBox="0 0 56 56" fill="none" aria-hidden>
+      <circle cx="28" cy="10" r="6" fill="#f4ece1"/>
+      <path d="M18 20 C22 30 28 32 28 32 C28 32 34 30 38 20" stroke="#222" strokeWidth="1.4" fill="none"/>
+      <path d="M22 24 C24 28 28 30 28 30 C28 30 32 28 34 24" stroke="#222" strokeWidth="0.8" fill="#f3c8cf" fillOpacity="0.2"/>
+      <path d="M14 20 L18 20 C22 30 28 32 28 32 C28 32 34 30 38 20 L42 20 L42 52 L14 52 Z" fill="#b8336a" fillOpacity="0.12"/>
+      <path d="M14 20 L42 20" stroke="#222" strokeWidth="1.2"/>
+    </svg>
+  ),
+  "one-shoulder": (
+    <svg width={S} height={S} viewBox="0 0 56 56" fill="none" aria-hidden>
+      <circle cx="28" cy="10" r="6" fill="#f4ece1"/>
+      <path d="M18 16 L18 24 L40 28 L40 52 L14 52 L14 24 Z" fill="#b8336a" fillOpacity="0.12"/>
+      <path d="M18 16 L18 24 L40 28" stroke="#222" strokeWidth="1.4" fill="none"/>
+      <line x1="40" y1="28" x2="42" y2="20" stroke="#222" strokeWidth="0.8" strokeDasharray="2 2"/>
+    </svg>
+  ),
+  "high-neck": (
+    <svg width={S} height={S} viewBox="0 0 56 56" fill="none" aria-hidden>
+      <circle cx="28" cy="8" r="6" fill="#f4ece1"/>
+      <rect x="22" y="14" width="12" height="8" rx="4" fill="#b8336a" fillOpacity="0.15" stroke="#222" strokeWidth="1.2"/>
+      <path d="M14 22 L22 22 L22 14 L34 14 L34 22 L42 22 L42 52 L14 52 Z" fill="#b8336a" fillOpacity="0.1"/>
+      <path d="M14 22 L42 22" stroke="#222" strokeWidth="1.2"/>
+    </svg>
+  ),
 };
 
 export function NecklineIcon({ neckline }: { neckline: Neckline }) {

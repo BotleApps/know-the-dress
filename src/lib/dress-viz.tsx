@@ -122,10 +122,14 @@ const HEM_Y: Record<string, number> = {
 };
 
 function waistL(neckline: string): number {
-  return neckline === "off-shoulder" ? 62 : 68;
+  if (neckline === "off-shoulder") return 62;
+  if (neckline === "one-shoulder") return 68;
+  return 68;
 }
 function waistR(neckline: string): number {
-  return neckline === "off-shoulder" ? 138 : 132;
+  if (neckline === "off-shoulder") return 138;
+  if (neckline === "one-shoulder") return 132;
+  return 132;
 }
 
 // ─── Neckline paths ────────────────────────────────
@@ -144,6 +148,16 @@ function necklinePath(neckline: string): string {
       return "M74 52 L74 64 L126 64 L126 52";
     case "off-shoulder":
       return "M54 58 C70 48 90 50 100 54 C110 50 130 48 146 58";
+    case "strapless":
+      return "M68 52 C78 48 122 48 132 52";
+    case "scoop":
+      return "M68 52 C68 66 100 78 100 78 C100 78 132 66 132 52";
+    case "cowl":
+      return "M72 52 C78 68 100 74 100 74 C100 74 122 68 128 52";
+    case "one-shoulder":
+      return "M68 44 L68 56 L132 62";
+    case "high-neck":
+      return "M78 38 L78 52 L122 52 L122 38";
     default:
       return "M68 52 L100 74 L132 52";
   }
@@ -171,8 +185,8 @@ function DressBody({
 
   // Bodice shoulders
   const shoulderL = neckline === "off-shoulder" ? 54 : 68;
-  const shoulderR = neckline === "off-shoulder" ? 146 : 132;
-  const neckTop = neckline === "boat" ? 52 : neckline === "off-shoulder" ? 58 : 52;
+  const shoulderR = neckline === "off-shoulder" ? 146 : neckline === "one-shoulder" ? 132 : 132;
+  const neckTop = neckline === "boat" ? 52 : neckline === "off-shoulder" ? 58 : neckline === "strapless" ? 52 : neckline === "high-neck" ? 38 : neckline === "one-shoulder" ? 44 : 52;
 
   let path: string;
 
