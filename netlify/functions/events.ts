@@ -28,7 +28,23 @@ export const handler: Handler = async (event) => {
 
   try {
     const store = getStore({ name: "stylesift-events", consistency: "eventual" });
-    const { blobs } = await store.list();
+
+    let blobs: { key: string }[] = [];
+    try {
+      const listing = await store.list();
+      blobs = listing.blobs ?? [];
+    } catch (listErr: any) {
+      // Store might not exist yet (no events logged) — return empty
+      console.warn("Blob store list failed (may not exist yet):", listErr?.message ?? listErr);
+      return {
+        statusCode: 200,
+        headers: {
+          "content-type": "application/json",
+          "cache-control": "no-store",
+        },
+        body: JSON.stringify({ count: 0, events: [] }),
+      };
+    }
 
     const events: unknown[] = [];
     // Fetch up to 500 most recent events (blobs are listed in key order).
@@ -56,11 +72,11 @@ export const handler: Handler = async (event) => {
       },
       body: JSON.stringify({ count: events.length, events }),
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error("Failed to read events", err);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Failed to read events" }),
+      body: JSON.stringify({ error: "Failed to read events", detail: err?.message ?? String(err) }),
     };
   }
 };
