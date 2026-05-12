@@ -1,6 +1,16 @@
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 
+function blobStore() {
+  const siteID = process.env.NETLIFY_SITE_ID ?? process.env.SITE_ID ?? "";
+  const token = process.env.NETLIFY_API_TOKEN ?? process.env.NETLIFY_AUTH_TOKEN ?? "";
+  if (siteID && token) {
+    return getStore({ name: "stylesift-events", siteID, token });
+  }
+  // Fallback: let the SDK try auto-detection (works in Netlify-native builds)
+  return getStore("stylesift-events");
+}
+
 // Protect with a simple bearer token set in Netlify env vars.
 // Set STYLESIFT_ADMIN_TOKEN in your Netlify site → Environment variables.
 function authorized(event: HandlerEvent): boolean {
@@ -27,7 +37,7 @@ export const handler: Handler = async (event) => {
   }
 
   try {
-    const store = getStore("stylesift-events");
+    const store = blobStore();
 
     let blobs: { key: string }[] = [];
     try {

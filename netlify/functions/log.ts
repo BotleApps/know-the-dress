@@ -2,6 +2,15 @@ import type { Handler, HandlerEvent } from "@netlify/functions";
 import { getStore } from "@netlify/blobs";
 import { createHash } from "node:crypto";
 
+function blobStore() {
+  const siteID = process.env.NETLIFY_SITE_ID ?? process.env.SITE_ID ?? "";
+  const token = process.env.NETLIFY_API_TOKEN ?? process.env.NETLIFY_AUTH_TOKEN ?? "";
+  if (siteID && token) {
+    return getStore({ name: "stylesift-events", siteID, token });
+  }
+  return getStore("stylesift-events");
+}
+
 interface LogPayload {
   event: string;
   payload?: Record<string, unknown>;
@@ -57,7 +66,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
   };
 
   try {
-    const store = getStore("stylesift-events");
+    const store = blobStore();
     // One blob per event keeps writes cheap and readable.
     const key = `${ts}-${Math.random().toString(36).slice(2, 8)}`;
     await store.setJSON(key, record);
