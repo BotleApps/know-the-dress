@@ -23,6 +23,7 @@ interface LogPayload {
 const ALLOWED_EVENTS = new Set([
   "view",
   "path_chosen",
+  "selection",
   "recommendation",
   "share_intent",
 ]);

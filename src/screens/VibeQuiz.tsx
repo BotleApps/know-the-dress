@@ -14,6 +14,7 @@ import {
 } from "../lib/dress";
 import { MoodIcon, OccasionIcon, SeasonIcon } from "../lib/icons";
 import { FooterCTA, Header } from "./_chrome";
+import { logEvent } from "../lib/log";
 
 interface VibeQuizProps {
   onBack: () => void;
@@ -42,6 +43,13 @@ export function VibeQuiz({ onBack, onComplete }: VibeQuizProps) {
   }, [step, mood, occasion, color, season, size]);
 
   const next = () => {
+    // Log the choice for this step
+    const fields = ["mood", "occasion", "color", "season", "size"] as const;
+    const values = [mood, occasion, color, season, size];
+    const field = fields[step];
+    const value = values[step];
+    if (value) logEvent("selection", { via: "vibe", field, value, step: step + 1 });
+
     if (step < 4) setStep((s) => (s + 1) as Step);
     else if (mood && occasion && color && season && size)
       onComplete({ mood, occasion, color, season, size });

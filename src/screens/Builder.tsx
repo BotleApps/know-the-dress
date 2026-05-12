@@ -19,6 +19,7 @@ import {
 import { DressViz } from "../lib/dress-viz";
 import { NecklineIcon, LengthIcon, FabricIcon, SleeveIcon, SlitIcon } from "../lib/icons";
 import { FooterCTA, Header } from "./_chrome";
+import { logEvent } from "../lib/log";
 
 interface BuilderProps {
   onBack: () => void;
@@ -53,6 +54,12 @@ export function Builder({ onBack, onComplete }: BuilderProps) {
   }, [step, neckline, length, fabric, sleeve, slit, color, size]);
 
   const next = () => {
+    const fields = ["neckline", "length", "fabric", "sleeve", "slit", "color", "size"] as const;
+    const values = [neckline, length, fabric, sleeve, slit, color, size];
+    const field = fields[step];
+    const value = values[step];
+    if (value) logEvent("selection", { via: "builder", field, value, step: step + 1 });
+
     if (step < 6) setStep((s) => (s + 1) as Step);
     else if (neckline && length && fabric && sleeve && slit && color && size)
       onComplete({ neckline, length, fabric, sleeve, slit, color, size });

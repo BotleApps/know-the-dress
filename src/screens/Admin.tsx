@@ -180,51 +180,102 @@ export function Admin({ onBack }: AdminProps) {
 }
 
 // ─── Flow grouping ──────────────────────────────────────────
+// One flow = one "try". Within a session we split into multiple tries:
+// a try ends at a `recommendation`, and any later activity (path_chosen,
+// selection, etc.) starts a new try. share_intent is attached to the
+// most recent completed try.
 
 function groupIntoFlows(events: EventRecord[]): Flow[] {
-  const map = new Map<string, EventRecord[]>();
+  const bySession = new Map<string, EventRecord[]>();
   for (const ev of events) {
-    const arr = map.get(ev.sessionId);
+    const arr = bySession.get(ev.sessionId);
     if (arr) arr.push(ev);
-    else map.set(ev.sessionId, [ev]);
+    else bySession.set(ev.sessionId, [ev]);
   }
 
   const flows: Flow[] = [];
-  for (const [sessionId, evs] of map) {
-    evs.sort((a, b) => a.ts - b.ts);
-    const startedAt = evs[0].ts;
-    const endedAt = evs[evs.length - 1].ts;
 
-    let path: "vibe" | "builder" | undefined;
-    let recommended: Flow["recommended"];
-    let shared = false;
-    let completed = false;
+  for (const [sessionId, sessionEvs] of bySession) {
+    sessionEvs.sort((a, b) => a.ts - b.ts);
 
-    for (const ev of evs) {
-      const p = ev.payload as any;
-      if (ev.event === "path_chosen" && (p?.path === "vibe" || p?.path === "builder")) {
-        path = p.path;
+    // Split this session into one or more tries.
+    let currentTry: EventRecord[] = [];
+    const tries: EventRecord[][] = [];
+
+    const startsNewTry = (ev: EventRecord) =>
+      ev.event === "path_chosen" || ev.event === "selection";
+
+    for (const ev of sessionEvs) {
+      if (ev.event === "share_intent") {
+        // attach share to the LAST try (most recent completed try)
+        if (tries.length > 0) {
+          tries[tries.length - 1].push(ev);
+        } else {
+          currentTry.push(ev);
+        }
+        continue;
       }
+
+      // If we already have a completed try in `currentTry` and this new event
+      // looks like the start of another try, close the current and start fresh.
+      const currentHasReveal = currentTry.some((e) => e.event === "recommendation");
+      if (currentHasReveal && startsNewTry(ev)) {
+        tries.push(currentTry);
+        currentTry = [];
+      }
+
+      currentTry.push(ev);
+
       if (ev.event === "recommendation") {
-        completed = true;
-        if (p?.via === "vibe" || p?.via === "builder") path = p.via;
-        if (p?.result) recommended = { name: p.result.name, character: p.result.character, tagline: p.result.tagline };
+        // Don't close yet — wait to see if a share_intent follows.
+        // We'll close when the next try starts (handled above) or at end of loop.
       }
-      if (ev.event === "share_intent") shared = true;
     }
+    if (currentTry.length > 0) tries.push(currentTry);
 
-    flows.push({
-      sessionId,
-      ipHash: evs[0].ipHash,
-      startedAt,
-      endedAt,
-      path,
-      recommended,
-      shared,
-      completed,
-      device: parseDevice(evs[0].ua),
-      events: evs,
-    });
+    // Build a Flow per try
+    for (const evs of tries) {
+      // Skip "tries" that are only page views (noise)
+      const hasMeaningful = evs.some((e) => e.event !== "view");
+      if (!hasMeaningful) continue;
+
+      const startedAt = evs[0].ts;
+      const endedAt = evs[evs.length - 1].ts;
+
+      let path: "vibe" | "builder" | undefined;
+      let recommended: Flow["recommended"];
+      let shared = false;
+      let completed = false;
+
+      for (const ev of evs) {
+        const p = ev.payload as any;
+        if (ev.event === "path_chosen" && (p?.path === "vibe" || p?.path === "builder")) {
+          path = p.path;
+        }
+        if (ev.event === "selection" && (p?.via === "vibe" || p?.via === "builder")) {
+          path = p.via;
+        }
+        if (ev.event === "recommendation") {
+          completed = true;
+          if (p?.via === "vibe" || p?.via === "builder") path = p.via;
+          if (p?.result) recommended = { name: p.result.name, character: p.result.character, tagline: p.result.tagline };
+        }
+        if (ev.event === "share_intent") shared = true;
+      }
+
+      flows.push({
+        sessionId,
+        ipHash: evs[0].ipHash,
+        startedAt,
+        endedAt,
+        path,
+        recommended,
+        shared,
+        completed,
+        device: parseDevice(evs[0].ua),
+        events: evs,
+      });
+    }
   }
 
   flows.sort((a, b) => b.startedAt - a.startedAt);
@@ -381,19 +432,44 @@ function FlowRow({ flow, expanded, onToggle }: { flow: Flow; expanded: boolean; 
         <div className="border-t border-hairline-soft bg-surface-soft/30 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted mb-2">Journey</p>
           <ol className="space-y-1.5">
-            {flow.events.map((ev, i) => (
-              <li key={i} className="flex items-start gap-3 text-[12px]">
-                <span className="shrink-0 text-muted-soft tabular-nums w-12">
-                  {new Date(ev.ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                </span>
-                <span className="shrink-0 w-2 h-2 rounded-full bg-primary mt-1.5" />
-                <span className="text-ink">
-                  <span className="font-medium">{prettyEvent(ev.event)}</span>
-                  {summarizePayload(ev) && <span className="text-muted ml-1.5">— {summarizePayload(ev)}</span>}
-                </span>
-              </li>
-            ))}
+            {flow.events
+              .filter((ev) => ev.event !== "view")
+              .map((ev, i) => (
+                <li key={i} className="flex items-start gap-3 text-[12px]">
+                  <span className="shrink-0 text-muted-soft tabular-nums w-12">
+                    {new Date(ev.ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                  </span>
+                  <span className="shrink-0 w-2 h-2 rounded-full bg-primary mt-1.5" />
+                  <span className="text-ink">
+                    <span className="font-medium">{prettyEvent(ev.event)}</span>
+                    {summarizePayload(ev) && <span className="text-muted ml-1.5">— {summarizePayload(ev)}</span>}
+                  </span>
+                </li>
+              ))}
+            {flow.recommended && (() => {
+              const recEv = flow.events.find((e) => e.event === "recommendation");
+              const answers = (recEv?.payload as any)?.answers as Record<string, string> | undefined;
+              if (!answers) return null;
+              return (
+                <li className="mt-3 ml-[60px] rounded-md bg-white border border-hairline-soft p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1.5">Final answers</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {Object.entries(answers).map(([k, v]) => (
+                      <span key={k} className="inline-flex items-center gap-1 rounded-full bg-primary-tint px-2 py-0.5 text-[11px]">
+                        <span className="text-muted">{k}</span>
+                        <span className="font-medium text-ink">{String(v)}</span>
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              );
+            })()}
           </ol>
+          {flow.events.filter((e) => e.event === "view").length > 0 && (
+            <p className="mt-3 text-[10px] text-muted-soft">
+              + {flow.events.filter((e) => e.event === "view").length} page view{flow.events.filter((e) => e.event === "view").length === 1 ? "" : "s"}
+            </p>
+          )}
         </div>
       )}
     </div>
@@ -402,9 +478,10 @@ function FlowRow({ flow, expanded, onToggle }: { flow: Flow; expanded: boolean; 
 
 function prettyEvent(name: string): string {
   switch (name) {
-    case "view": return "Opened the app";
-    case "path_chosen": return "Chose path";
-    case "recommendation": return "Got a reveal";
+    case "view": return "Viewed page";
+    case "path_chosen": return "Started";
+    case "selection": return "Picked";
+    case "recommendation": return "✨ Got the reveal";
     case "share_intent": return "Tapped share";
     default: return name;
   }
@@ -413,12 +490,16 @@ function prettyEvent(name: string): string {
 function summarizePayload(ev: EventRecord): string | null {
   const p = ev.payload as any;
   if (!p) return null;
-  if (ev.event === "path_chosen") return p.path ?? null;
+  if (ev.event === "path_chosen") return p.path === "vibe" ? "the vibe quiz" : p.path === "builder" ? "the builder" : p.path ?? null;
+  if (ev.event === "selection") {
+    if (p.field && p.value) return `${p.field}: ${p.value}`;
+    return null;
+  }
   if (ev.event === "recommendation") {
     const parts: string[] = [];
-    if (p.via) parts.push(p.via);
-    if (p.result?.name) parts.push(`"${p.result.name}"`);
-    return parts.join(" · ") || null;
+    if (p.result?.character) parts.push(p.result.character);
+    if (p.result?.name) parts.push(`“${p.result.name}”`);
+    return parts.join(" in ") || null;
   }
   if (ev.event === "share_intent") return p.name ?? null;
   return null;
