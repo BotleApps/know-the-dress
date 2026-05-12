@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Home } from "./screens/Home";
+import { Inspire } from "./screens/Inspire";
 import { VibeQuiz } from "./screens/VibeQuiz";
 import { Builder } from "./screens/Builder";
 import { Result } from "./screens/Result";
@@ -15,6 +16,7 @@ import { logEvent } from "./lib/log";
 
 type Route =
   | { name: "home" }
+  | { name: "inspire" }
   | { name: "vibe" }
   | { name: "builder" }
   | { name: "result"; result: DressResult; via: "vibe" | "builder" }
@@ -37,6 +39,14 @@ export default function App() {
       case "home":
         return (
           <Home
+            onBegin={() => setRoute({ name: "inspire" })}
+            onAdmin={() => setRoute({ name: "admin" })}
+          />
+        );
+      case "inspire":
+        return (
+          <Inspire
+            onBack={() => setRoute({ name: "home" })}
             onPickVibe={() => {
               logEvent("path_chosen", { path: "vibe" });
               setRoute({ name: "vibe" });
@@ -45,13 +55,12 @@ export default function App() {
               logEvent("path_chosen", { path: "builder" });
               setRoute({ name: "builder" });
             }}
-            onAdmin={() => setRoute({ name: "admin" })}
           />
         );
       case "vibe":
         return (
           <VibeQuiz
-            onBack={() => setRoute({ name: "home" })}
+            onBack={() => setRoute({ name: "inspire" })}
             onComplete={(answers: VibeAnswers) => {
               const result = recommendFromVibe(answers);
               logEvent("recommendation", {
@@ -66,7 +75,7 @@ export default function App() {
       case "builder":
         return (
           <Builder
-            onBack={() => setRoute({ name: "home" })}
+            onBack={() => setRoute({ name: "inspire" })}
             onComplete={(answers: BuilderAnswers) => {
               const result = recommendFromBuilder(answers);
               logEvent("recommendation", {

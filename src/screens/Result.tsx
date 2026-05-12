@@ -130,7 +130,7 @@ export function Result({ result, via, onRestart, onTryOther }: ResultProps) {
               onClick={handleShare}
               disabled={sharing}
             >
-              {sharing ? "Creating card…" : "Share my dress ✦"}
+              {sharing ? "Creating card…" : "Share my vibe ✦"}
             </button>
             <button type="button" className="btn-secondary" onClick={onTryOther}>
               Try the {via === "vibe" ? "builder" : "vibe quiz"}

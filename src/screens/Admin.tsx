@@ -166,14 +166,17 @@ export function Admin({ onBack }: AdminProps) {
             <p className="body-sm text-muted">No flows match this filter.</p>
           </div>
         )}
-        {filteredFlows.map((flow) => (
-          <FlowRow
-            key={flow.sessionId}
-            flow={flow}
-            expanded={expanded === flow.sessionId}
-            onToggle={() => setExpanded(expanded === flow.sessionId ? null : flow.sessionId)}
-          />
-        ))}
+        {filteredFlows.map((flow) => {
+          const flowId = `${flow.sessionId}:${flow.startedAt}`;
+          return (
+            <FlowRow
+              key={flowId}
+              flow={flow}
+              expanded={expanded === flowId}
+              onToggle={() => setExpanded(expanded === flowId ? null : flowId)}
+            />
+          );
+        })}
       </div>
     </main>
   );
